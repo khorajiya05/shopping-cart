@@ -1,7 +1,15 @@
-import React, { useState, createContext, useContext, ReactNode, useEffect } from "react";
+import React, {
+  useState,
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+} from "react";
+import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../app/hooks";
 
-//-----------------------------types section------------------------------------
+
+//-----------------------------types------------------------------------
 type StoreItem = {
   id: number;
   title: string;
@@ -13,61 +21,35 @@ type StoreItem = {
   rating: { rate: number; count: number };
 };
 
-// type ProductDetailPageHandlerType = {
-//   title:string;
-//   price:number;
-//   image:string;
-//   id:number;
-//   description:string;
-//   off:number;
-//   discount:number;
-//   starPercentageRounded:string;
-// }
-
 type StoreItemContextType = {
   filterItems: StoreItem[];
   filterProducts: (category: string) => void;
   resetFilterProducts: () => void;
-  // productDetailPageHandler: (data:ProductDetailPageHandlerType) => void;
+  findStarPercentageRounded: (rate: number) => string;
+  findDiscount: (price: number, off: number) => number;
+  passDataToCheckOut: (item: StoreItem[]) => void;
 };
 
 type StoreItemContextProviderProps = {
   children: ReactNode;
 };
 
-
-
-
-
-
-//-----------------------custom hook to return context value------------------------------------
+//-----------------------custom hook to get context data------------------------------------
 export const useStoreItemContext = () => {
   return useContext(StoreItemContext);
 };
 
-
-
-
-
-
 //----------------------------------create context----------------------------------------------
 export const StoreItemContext = createContext({} as StoreItemContextType);
 
-
-
-
-
-
-
-
 //--------------------------------context provider--------------------------------------------
 
-
-const StoreItemContextProvider = ({children}: StoreItemContextProviderProps) => {
-  // const [storeItems, setStoreItems] = useState<StoreItem[]>(storeItemsJson);
-  const {products} = useAppSelector(state=>state.product);
+const StoreItemContextProvider = ({
+  children,
+}: StoreItemContextProviderProps) => {
+  const { products } = useAppSelector((state) => state.product);
   const [filterItems, setFilterItems] = useState(products);
-  // const [productDetailOpen, setIsProductDetailOpen] = useState({});
+  const navigate = useNavigate();
 
   //filter items
   const filterProducts = (category: string) => {
@@ -81,18 +63,26 @@ const StoreItemContextProvider = ({children}: StoreItemContextProviderProps) => 
     setFilterItems(products);
   };
 
-  //open product detail page
-  // const productDetailPageHandler=(data:Partial<ProductDetailPageHandlerType>)=>{
-  //   if(data)
-  //   setIsProductDetailOpen(!setIsProductDetailOpen);
-  //   else{
-  //     setIsProductDetailOpen({});
-  //   }
-  // }
+  //find starPercentageRounded
+  const findStarPercentageRounded = (rate: number) => {
+    const starTotal = 5;
+    const starPercentage = (rate / starTotal) * 100;
+    return `${Math.round(starPercentage / 10) * 10}%`;
+  };
 
-  useEffect(()=>{
-    setFilterItems(products)
-  },[products])
+  //find discount
+  const findDiscount = (price: number, off: number) => {
+    return Math.round((price * (100 - off)) / 100);
+  };
+
+  //pass data to checkout
+  const passDataToCheckOut = (item: StoreItem[]) => {
+    navigate("/checkout", { state: item });
+  };
+
+  useEffect(() => {
+    setFilterItems(products);
+  }, [products]);
 
   return (
     <StoreItemContext.Provider
@@ -100,8 +90,9 @@ const StoreItemContextProvider = ({children}: StoreItemContextProviderProps) => 
         filterItems,
         filterProducts,
         resetFilterProducts,
-        // productDetailPageHandler
-        // sortProductsHighToLow,
+        findStarPercentageRounded,
+        findDiscount,
+        passDataToCheckOut,
       }}
     >
       {children}

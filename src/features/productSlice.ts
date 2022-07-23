@@ -24,7 +24,7 @@ const initialState: InitialState = {
 }
 
 // Generates pending, fulfilled and rejected action types
-export const fetchUsers = createAsyncThunk('user/fetchUsers', async () => {
+export const fetchProducts = createAsyncThunk('product/fetchProducts', async () => {
   const response = await axios
     .get('./data/items.json');
   return response.data;
@@ -37,18 +37,18 @@ const productSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: builder => {
-    builder.addCase(fetchUsers.pending, state => {
+    builder.addCase(fetchProducts.pending, state => {
       state.loading = true
     })
     builder.addCase(
-      fetchUsers.fulfilled,
+      fetchProducts.fulfilled,
       (state, action: PayloadAction<StoreItem[]>) => {
         state.loading = false
         state.products = action.payload
         state.error = ''
       }
     )
-    builder.addCase(fetchUsers.rejected, (state, action) => {
+    builder.addCase(fetchProducts.rejected, (state, action) => {
       state.loading = false
       state.products = []
       state.error = action.error.message || 'Something went wrong'

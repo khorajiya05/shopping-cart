@@ -1,17 +1,19 @@
-import { useEffect } from "react";
+import { Avatar } from "@mui/material";
 import { NavLink } from "react-router-dom";
+import { useAppSelector } from "../app/hooks";
 import { useCartContext } from "../context/CartContext";
-import { fetchUsers } from "../features/produxtSlice";
-import { useAppDispatch } from "../app/hooks";
+import { useSavedItemsContext } from "../context/SavedItemsContext";
 
 export function Navbar() {
   const { cartItem } = useCartContext();
-  const dispatch = useAppDispatch();
-  const total = cartItem.length;
+  const {getItemsListFromSavedList} = useSavedItemsContext();
 
-  useEffect(() => {
-    dispatch(fetchUsers());
-  }, [dispatch]);
+  const total = cartItem.length;
+  const wishList = getItemsListFromSavedList().length;
+
+  
+  const user = useAppSelector((state) => state.user);
+
   return (
     <>
       {/* navbar*/}
@@ -81,39 +83,43 @@ export function Navbar() {
                       Shopping cart
                     </NavLink>
                     <NavLink
+                      to={"/login"}
                       className="dropdown-item border-0 transition-link"
-                      to="/checkout"
                     >
-                      Checkout
+                      Login
                     </NavLink>
                   </div>
                 </li>
               </ul>
               <ul className="navbar-nav ms-auto">
                 <li className="nav-item">
-                  <NavLink
-                    to={"/cart"}
-                    className="nav-link"
-                    //  onClick={() => openCart()}
-                  >
+                  <NavLink to={"/cart"} className="nav-link">
                     <i className="fas fa-dolly-flatbed me-1 text-gray" />
                     Cart
-                    <small className="text-gray fw-normal">
-                      ({total > 0 ? total : "0"})
-                    </small>
+                    {total > 0 && <small className="text-gray fw-normal">
+                      ({total })
+                    </small>}
                   </NavLink>
                 </li>
                 <li className="nav-item">
-                  <NavLink className="nav-link" to="#!">
-                    <i className="far fa-heart me-1" />
-                    <small className="text-gray fw-normal"> (0)</small>
+                  <NavLink className="nav-link" to={"/wishlist"}>
+                    <i className="far fa-heart me-1" />Wishlist
+                    {wishList > 0 && <small className="text-gray fw-normal">
+                      ({wishList })
+                    </small>}
                   </NavLink>
                 </li>
                 <li className="nav-item">
-                  <NavLink className="nav-link" to="#!">
-                    <i className="fas fa-user me-1 text-gray fw-normal" />
-                    Login
-                  </NavLink>
+                  {user.uid ? (
+                    <NavLink className="nav-link" to="/profile">
+                      <Avatar style={{height:"30px", width: "30px"}} src={user?.photo} />
+                    </NavLink>
+                  ) : (
+                    <NavLink className="nav-link" to="/login">
+                      <i className="fas fa-user me-1 text-gray fw-normal" />
+                      Login
+                    </NavLink>
+                  )}
                 </li>
               </ul>
             </div>

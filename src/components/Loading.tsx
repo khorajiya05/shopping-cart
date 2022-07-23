@@ -19,4 +19,4 @@ export const Loading = () => {
       </div>
     </>
   );
-}
+};

@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import styleSheet from "./CSS/style.module.css";
 import { useCartContext } from "../context/CartContext";
+import { useStoreItemContext } from "../context/StoreItemContext";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import { useSavedItemsContext } from "../context/SavedItemsContext";
+import { ToastContainer } from "react-toastify";
 
 type ProductDetailType = {
   title: string;
@@ -10,19 +14,37 @@ type ProductDetailType = {
   id: number;
   description: string;
   off: number;
-  discount: number;
-  starPercentageRounded: string;
   category: string;
   rating: { rate: number; count: number };
 };
 
 export const ItemDetail = () => {
   const [swapImage, setSwapImage] = useState(false);
-  const { increaseCartItemQuantity, getCartItemquantity } = useCartContext();
-  const { state } = useLocation();
-  const { title, price, image, id, description, off, discount, starPercentageRounded, category, rating} = state as ProductDetailType;
-
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const {
+    increaseCartItemQuantity,
+    getCartItemquantity,
+    convertPriceInCurrency,
+  } = useCartContext();
+  const { findStarPercentageRounded, findDiscount, passDataToCheckOut } =
+    useStoreItemContext();
+  const {
+    addItemToSavedList,
+    getItemsListFromSavedList,
+    handleToast,
+    removeItemFromSavedList,
+  } = useSavedItemsContext();
+
+  const { title, price, image, id, description, off, category, rating } =
+    state as ProductDetailType;
+
+  const isSavedItem = getItemsListFromSavedList().find(
+    (elem) => elem.id === id
+  );
+
+  const starPercentageRounded = findStarPercentageRounded(rating.rate);
+  const discount = convertPriceInCurrency(findDiscount(price, off));
   const quantity = getCartItemquantity(id);
 
   useEffect(() => {
@@ -81,7 +103,51 @@ export const ItemDetail = () => {
                         <i className="fa fa-long-arrow-left" />
                         <span className="ml-1">Back</span>
                       </div>
-                      {/* <i className="fa fa-shopping-cart text-muted" /> */}
+                      <div className="d-flex gap-3">
+                        {isSavedItem ? (
+                          <>
+                            <ToastContainer />
+                            <FavoriteIcon
+                              className="text-danger"
+                              style={{ cursor: "pointer" }}
+                              onClick={() => {
+                                removeItemFromSavedList(id);
+                                handleToast("Product removed from wishlist","info");
+                              }}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <ToastContainer />
+                            <FavoriteIcon
+                              className="text-muted"
+                              style={{ cursor: "pointer" }}
+                              onClick={() => {
+                                addItemToSavedList(id);
+                                handleToast("Product added in wishlist", "success");
+                              }}
+                            />
+                          </>
+                        )}
+                        {quantity > 0 ? (
+                          <NavLink to="/cart" className="text-muted">
+                            Open
+                            <i className="fas fa-dolly-flatbed mx-1" />
+                          </NavLink>
+                        ) : (
+                          <label
+                            className="text-dark"
+                            onClick={() => {
+                              increaseCartItemQuantity(id);
+                              handleToast("Added in cart", "success");
+                            }}
+                            style={{ cursor: "pointer" }}
+                          >
+                            Add
+                            <i className="fas fa-dolly-flatbed mx-1" />
+                          </label>
+                        )}
+                      </div>
                     </div>
                     <div className="mt-4 mb-4">
                       <div className="text-uppercase text-muted brand mb-1">
@@ -89,22 +155,16 @@ export const ItemDetail = () => {
                       </div>
                       <h5 className="text-capitalize">{title}</h5>
                       <div className="price d-flex flex-row align-items-center mt-3">
-                        <span className={`${styleSheet.actprice} act-price`}>
-                          {discount.toLocaleString("en-US", {
-                            style: "currency",
-                            currency: "INR",
-                          })}
-                        </span>
+                        <label className={`${styleSheet.actprice} act-price`}>
+                          {discount}
+                        </label>
                         <div className="ml-2">
                           <small
-                            className={`${styleSheet.disprice} dis-price ml-1`}
+                            className={`${styleSheet.disprice} dis-price mx-1`}
                           >
-                            {price.toLocaleString("en-US", {
-                              style: "currency",
-                              currency: "INR",
-                            })}
+                            {convertPriceInCurrency(price)}
                           </small>
-                          <span className="ml-1">{off}% OFF</span>
+                          <span> {off}% off</span>
                         </div>
                       </div>
                     </div>
@@ -126,27 +186,23 @@ export const ItemDetail = () => {
                     <div className="cart mt-4 align-items-center">
                       <button
                         className={`${styleSheet.btnprimary} btn btn-primary text-uppercase mr-2 mb-1 px-4`}
+                        onClick={() =>
+                          passDataToCheckOut([
+                            {
+                              title,
+                              price,
+                              image,
+                              id,
+                              description,
+                              off,
+                              category,
+                              rating,
+                            },
+                          ])
+                        }
                       >
                         Buy now
                       </button>
-                      {quantity > 0 ? (
-                        <button
-                          className={`${styleSheet.btndanger} btn btn-danger text-uppercase mr-2 mb-1 px-4 disabled`}
-                        >
-                          Add to Cart
-                        </button>
-                      ) : (
-                        <button
-                          className={`${styleSheet.btndanger} btn btn-danger text-uppercase mr-2 mb-1 px-4`}
-                          onClick={() => increaseCartItemQuantity(id)}
-                        >
-                          Add to cart
-                        </button>
-                      )}
-                      <i className={`${styleSheet.i} fa fa-heart text-muted`} />
-                      <i
-                        className={`${styleSheet.i} fa fa-share-alt text-muted`}
-                      />
                     </div>
                   </div>
                 </div>

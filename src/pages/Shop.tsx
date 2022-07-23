@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { StoreItem } from "../components/StoreItem";
 import { useAppSelector } from "../app/hooks";
-import { useStoreItemContext } from "../context/StoreItemContext";
 import { Loading } from "../components/Loading";
 import { ApiError } from "../components/ApiError";
+import { Footer } from "../components/Footer";
+import { ToastContainer } from "react-toastify";
 
 //-------------------------------types section--------------------------------------
 type StoreItemType = {
@@ -19,28 +20,36 @@ type StoreItemType = {
 };
 
 export const Category = () => {
-  const { filterItems, filterProducts } = useStoreItemContext();
+  // const { filterItems } = useStoreItemContext();
   const [value, setValue] = useState<StoreItemType[] | []>([]);
   const { products, loading, error } = useAppSelector((state) => state.product);
   const [zoom, setZoom] = useState(false);
   const [value2, setValue2] = useState(true);
 
-  const sortProductsHighToLow = (stype: any) => {
-    if (stype === 1) {
-      setValue(filterItems.sort((a, b) => a.price - b.price));
+  //sort products by price
+  const sortProductsByPrice = (stype: number) => {
+    if (stype === 0) {
+      setValue(value.slice().sort((a, b) => a.price - b.price));
       setValue2(!value2);
-      console.log(filterItems);
     } else {
-      setValue(filterItems.sort((a, b) => b.price - a.price));
-      console.log(filterItems);
+      setValue(value.slice().sort((a, b) => b.price - a.price));
       setValue2(!value2);
     }
   };
 
-  useEffect(() => {
+  //filter products by category
+  const filterProducts = (category: string) => {
+    const filterResult = products.filter((item: StoreItemType) => {
+      return item.category.toLowerCase().match(category.toLowerCase());
+    });
+    setValue(filterResult);
     window.scrollTo(0, 0);
-    setValue(filterItems);
-  }, [filterItems]);
+  };
+
+  useEffect(() => {
+    setValue(products);
+    window.scrollTo(0, 0);
+  }, [products]);
 
   return (
     <div className="page-holder">
@@ -225,9 +234,7 @@ export const Category = () => {
                 <div className="row mb-3 align-items-center">
                   <div className="col-lg-6 mb-2 mb-lg-0">
                     <p className="text-sm text-muted mb-0">
-                      Showing{" "}
-                      {value?.length ? value.length : filterItems.length}{" "}
-                      results
+                      Showing {value.length} results
                     </p>
                   </div>
                   <div className="col-lg-6">
@@ -250,9 +257,9 @@ export const Category = () => {
                         <NavLink
                           className="reset-anchor p-0"
                           to="/category"
-                          onClick={() => sortProductsHighToLow(1)}
+                          onClick={() => sortProductsByPrice(0)}
                         >
-                          Low - High
+                          Low
                         </NavLink>
                       </li>
 
@@ -260,9 +267,9 @@ export const Category = () => {
                         <NavLink
                           className="reset-anchor p-0"
                           to="/category"
-                          onClick={() => sortProductsHighToLow(0)}
+                          onClick={() => sortProductsByPrice(1)}
                         >
-                          High - Low
+                          High
                         </NavLink>
                       </li>
 
@@ -271,23 +278,17 @@ export const Category = () => {
                   </div>
                 </div>
 
-                {/* products */}
-                {/* <div className="row" style={{overflow:"auto", height:"100vh"}}>
-                  {filterItems.length !== 0 ? (value.length >1 ? value : filterItems).map((elem: StoreItemType) => {
-                    return (
-                      <div className={zoom ? "col-lg-6 col-sm-12 my-3" : "col-lg-4 col-sm-6 my-2"} key={elem.id}>
-                        <StoreItem {...elem} />
-                      </div>
-                    );
-                  }) : <div className="d-flex justify-content-center"><h1>Item not found</h1></div>}
-                </div> */}
-
+                {/* products carts */}
                 <div
                   className="row"
                   style={{ overflow: "auto", height: "100vh" }}
                 >
-                  { loading ? ( loading && <Loading/> ) : !loading && error ?( <ApiError error={error}/> ): !loading && products.length ? 
-                    (filterItems.map((elem: StoreItemType) => {
+                  {loading ? (
+                    loading && <Loading />
+                  ) : !loading && error ? (
+                    <ApiError error={error} />
+                  ) : value.length ? (
+                    value.map((elem: StoreItemType) => {
                       return (
                         <div
                           className={
@@ -300,111 +301,23 @@ export const Category = () => {
                           <StoreItem {...elem} />
                         </div>
                       );
-                    })) : ""
-                  }
-                  
+                    })
+                  ) : (
+                    <div className="col-12 d-flex flex-column align-items-center pt-5">
+                      <h3>Sorry!!</h3>
+                      <div className="error-details">
+                        Requested Product not found!
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </section>
+        <ToastContainer/>
       </div>
-      <footer className="bg-dark text-white">
-        <div className="container py-4">
-          <div className="row py-5">
-            <div className="col-md-4 mb-3 mb-md-0">
-              <h6 className="text-uppercase mb-3">Customer services</h6>
-              <ul className="list-unstyled mb-0">
-                <li>
-                  <a className="footer-link" href="#!">
-                    Help &amp; Contact Us
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Returns &amp; Refunds
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Online Stores
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Terms &amp; Conditions
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div className="col-md-4 mb-3 mb-md-0">
-              <h6 className="text-uppercase mb-3">Company</h6>
-              <ul className="list-unstyled mb-0">
-                <li>
-                  <a className="footer-link" href="#!">
-                    What We Do
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Available Services
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Latest Posts
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    FAQs
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div className="col-md-4">
-              <h6 className="text-uppercase mb-3">Social media</h6>
-              <ul className="list-unstyled mb-0">
-                <li>
-                  <a className="footer-link" href="#!">
-                    Twitter
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Instagram
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Tumblr
-                  </a>
-                </li>
-                <li>
-                  <a className="footer-link" href="#!">
-                    Pinterest
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div
-            className="border-top pt-4"
-            style={{ borderColor: "#1d1d1d !important" }}
-          >
-            <div className="row">
-              <div className="col-md-6 text-center text-md-start">
-                <p className="small text-muted mb-0">
-                  © 2021 All rights reserved.
-                </p>
-              </div>
-              <div className="col-md-6 text-center text-md-end">
-                <p className="small text-muted mb-0">Juned Khorajiya</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

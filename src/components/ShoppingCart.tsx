@@ -1,18 +1,27 @@
 import { useCartContext } from "../context/CartContext";
 import { CartItem } from "./CartItem";
-import storeData from "../data/items.json";
-import { NavLink } from "react-router-dom";
-
-type CartItemType = {
-  id: number;
-  quantity: number;
-};
-
+import { useAppSelector } from "../app/hooks";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Loading } from "./Loading";
+import { ApiError } from "./ApiError";
 
 export const ShoppingCart = () => {
   //-----------------------------Hook------------------------
-  const { cartItem } = useCartContext();
+  const { products, loading, error } = useAppSelector((state) => state.product);
+  const navigate = useNavigate();
+  const {
+    cartItem,
+    totalPriceOfCartItems,
+    convertPriceInCurrency,
+    totalDiscountOfTotalPrice,
+  } = useCartContext();
 
+  const totalPriceOfItems = totalPriceOfCartItems();
+  const TotalPriceInCurrency = convertPriceInCurrency(totalPriceOfItems);
+  const totalPriceByRemoveDiscount = convertPriceInCurrency(
+    totalPriceOfCartItems() - totalDiscountOfTotalPrice()
+  );
+  const discount = totalDiscountOfTotalPrice();
   //---------------------------return jsx-------------------
   return (
     <div className="page-holder">
@@ -24,6 +33,7 @@ export const ShoppingCart = () => {
               <div className="col-lg-8 mb-4 mb-lg-0">
                 {/* CART TABLE*/}
                 <div className="table-responsive mb-4">
+                  {/* cart item table head */}
                   <table className="table text-nowrap bg-white">
                     <thead>
                       <tr>
@@ -52,14 +62,31 @@ export const ShoppingCart = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="border-0">
-                      {cartItem.map((elem) => {
-                        return <CartItem {...elem} key={elem.id} />;
-                      })}
-                    </tbody>
+                    {loading ? (
+                      <tbody>
+                        <tr>
+                          <td colSpan={4}>
+                            <Loading />
+                          </td>
+                        </tr>
+                      </tbody>
+                    ) : !loading && products.length ? (
+                      <tbody className="border-0">
+                        {cartItem.map((elem) => {
+                          return <CartItem {...elem} key={elem.id} />;
+                        })}
+                      </tbody>
+                    ) : (
+                      <tbody>
+                        <tr>
+                          <td colSpan={4}>
+                            <ApiError error={error} />
+                          </td>
+                        </tr>
+                      </tbody>
+                    )}
                   </table>
                 </div>
-                {/* CART NAV*/}
                 <div className="bg-light px-4 py-3">
                   <div className="row align-items-center text-center">
                     <div className="col-md-6 mb-3 mb-md-0 text-md-start">
@@ -72,13 +99,15 @@ export const ShoppingCart = () => {
                       </NavLink>
                     </div>
                     <div className="col-md-6 text-md-end">
-                      <NavLink
+                      <span
                         className="btn btn-outline-dark btn-sm"
-                        to="/checkout"
+                        onClick={() =>
+                          navigate("/checkout", { state: [...cartItem] })
+                        }
                       >
                         Procceed to checkout
                         <i className="fas fa-long-arrow-alt-right ms-2" />
-                      </NavLink>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -94,61 +123,21 @@ export const ShoppingCart = () => {
                           Subtotal
                         </strong>
                         <span className="text-muted small">
-                          {cartItem
-                            .reduce((total: number, elem: CartItemType) => {
-                              const item = storeData.find(
-                                (elem2) => elem2.id === elem.id
-                              );
-                              return total + elem.quantity * (item?.price || 0);
-                            }, 0)
-                            .toLocaleString("en-US", {
-                              style: "currency",
-                              currency: "INR",
-                            })}
+                          {TotalPriceInCurrency}
                         </span>
                       </li>
                       <li className="d-flex align-items-center justify-content-between">
                         <strong className="text-uppercase small font-weight-bold">
                           Discount
                         </strong>
-                        <span className="text-muted small">0</span>
+                        <span className="text-muted small">{discount}</span>
                       </li>
                       <li className="border-bottom my-2" />
                       <li className="d-flex align-items-center justify-content-between mb-4">
                         <strong className="text-uppercase small font-weight-bold">
                           Total
                         </strong>
-                        <span>
-                          {cartItem
-                            .reduce((total: number, elem: CartItemType) => {
-                              const item = storeData.find(
-                                (elem2) => elem2.id === elem.id
-                              );
-                              return total + elem.quantity * (item?.price || 0);
-                            }, 0)
-                            .toLocaleString("en-US", {
-                              style: "currency",
-                              currency: "INR",
-                            })}
-                        </span>
-                      </li>
-                      <li>
-                        <form action="#">
-                          <div className="input-group mb-0">
-                            <input
-                              className="form-control"
-                              type="text"
-                              placeholder="Enter your coupon"
-                            />
-                            <button
-                              className="btn btn-dark btn-sm w-100"
-                              type="submit"
-                            >
-                              <i className="fas fa-gift me-2" />
-                              Apply coupon
-                            </button>
-                          </div>
-                        </form>
+                        <span>{totalPriceByRemoveDiscount}</span>
                       </li>
                     </ul>
                   </div>
@@ -156,15 +145,16 @@ export const ShoppingCart = () => {
               </div>
             </div>
           ) : (
-          
-              <div className="d-flex flex-column align-items-center">
-                <h1>Cart is empty</h1>
-            
-              <NavLink className="btn btn-link p-0 text-dark btn-sm text-decoration-none" to="/category">
+            <div className="d-flex flex-column align-items-center">
+              <h1>Cart is empty</h1>
+              <NavLink
+                className="btn btn-link p-0 text-dark btn-sm text-decoration-none"
+                to="/category"
+              >
                 <i className="fas fa-long-arrow-alt-left me-2"></i>
                 <h5 className="d-inline ">Continue shopping</h5>
               </NavLink>
-              </div>
+            </div>
           )}
         </section>
       </div>
